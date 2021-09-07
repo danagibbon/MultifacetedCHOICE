@@ -1,0 +1,31 @@
+Package: MultifacetedCHOICE
+Type: Package
+Title: MultifacetedCHOICE - Optimal Mate Pairing Based on Multi-Loci SNP Data
+Version: 0.0.0.9000
+Authors@R: c(
+  person("Banks", "Michael", 
+  email = "michael.banks@oregonstate.edu", role = c("aut", "cre")),
+  person("Dana", "Gibbon", role = c("aut", "trl")),
+  person("Auld", "Heather", role = c("aut"))
+  )
+Description: MultifacetedCHOICE allows users to input previously known information about mating 
+    preferences (i.e. choice for positive or negative assortment at individual single 
+    nucleotide polymorphisms (SNPs)) of wild individuals of any species at multiple loci 
+    and genotypes for multiple individuals at many loci. 
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Language: en-US
+Imports:
+  dplyr,
+  gtools,
+  RSQLite,
+  stringr,
+  tibble,
+  tidyr,
+  tidyverse
+Suggests: 
+    knitr,
+    rmarkdown
+RoxygenNote: 7.1.1
+Roxygen: list(markdown = TRUE)
