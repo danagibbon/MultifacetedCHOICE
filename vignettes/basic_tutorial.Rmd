@@ -1,0 +1,213 @@
+---
+title: "Basic Tutorial"
+author: "Dana Gibbon"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Basic Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE, message=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(DT)
+```
+
+# Background
+
+While agricultural species in artificial breeding programs are often mated in specific ways to maximize yield, harvest or other desired traits, many breeding programs do not incorporate an opportunity for direct mate choice or to imitate wild-like mate choice decisions. Mate choice, however, is an important component of sexual reproduction that can affect individual reproductive success (i.e. number of offspring that survive to adulthood) (e.g. Drickamer et al. 2000; Reynolds & Gross 1992; Sandvik et al. 2000), and offspring traits such as performance (e.g. Drickamer et al. 2000), and growth (e.g. Reynolds & Gross 1992), and evolution (Andersson 1994). Both reproductive success, and offspring traits such as growth and performance, are important factors to consider when mating individuals for harvest and/or conservation programs (e.g. Martin-Wintle et al. 2015). 
+One issue with imitating wild-like mate choice is that mate choice is complicated, multifaceted (Candolin 2003), and variable across species, individuals, and contexts (Jennions & Petrie 1997; Qvarnström 2001; Bussiere et al. 2008). Fortunately, there are tools that can be used to better understand mate choice in other species. For instance, many individual traits important to mate choice have a genetic basis (Chenoweth & Blows 2006). It is therefore possible to use genetic information to (1) predict which partners prospective mates may choose in the wild and (2) use that information in an artificial breeding program, such as in fish hatcheries, which could create more ‘wild-like’ offspring in the absence of free mate choice.
+MultifacetedCHOICE allows users to input previously known information about mating preferences (i.e. choice for positive or negative assortment at individual single nucleotide polymorphisms (SNPs)) of wild individuals of any species at multiple loci and genotypes for multiple individuals at many loci. 
+
+
+# Quick start
+
+* Install `MultifacetedCHOICE` from GitHub
+
+```{r install, eval=FALSE}
+devtools::install_github("danagibbon/MultifacetedCHOICE",
+                         build_vignettes = FALSE)
+library(MultifacetedCHOICE)
+## load data
+geno <- read.csv(system.file("extdata", "sample_data.csv", package = "MultifacetedCHOICE"))
+meta_data <- read.csv(system.file("extdata", "meta_data.csv", package = "MultifacetedCHOICE"))
+allele_info <- read.csv(system.file("extdata", "allele_info.csv", package = "MultifacetedCHOICE"))
+## Make the database
+DBs <- make_database(gtseq = geno, metadata = meta_data, 
+                     allele_info = allele_info)
+# set samples
+females <- geno$Sample[1:7]
+males <- geno$Sample[21:26]
+# Check Sample IDs
+check_samples(DB = DBs, females = females, 
+              males = males, used = FALSE)
+# run samples, rank for each sample
+all_matings <- get_all_rankings(DB = DBs, females = females, males = males,
+                                type = "all_alleles")
+# Rank Matches
+tips <- rank_all_mates(females, males, ranked_list=all_matings)
+```
+
+# Details
+
+## Load MultifacetedCHOICE
+
+```{r load}
+library(MultifacetedCHOICE)
+```
+
+
+## Input Data
+
+You need to have these 3 dataframes set up ahead of time.
+
+### GT-seq output
+
+Contains: 
+
+* Sample IDs
+* Raw Reads
+* On Target Reads  = reads w/ fwd primer seq AND probe seq / reads w/ fwd primer seq
+* Percent on Target
+* % of sites with coverage
+* IFI = This version also outputs the IFI score (Individual fuzziness index) for each individual sample.  This is a measure of DNA cross contamination and is calculated using read counts from background signal at homozygous and No-Call loci.  Low scores are better than high scores. (https://github.com/GTseq/GTseq-Pipeline/blob/master/GTseq_Genotyper_v3.pl)
+* The rest of the columns are sites
+
+**The site column names need to match the allele IDs in the allele info dataframe**
+
+```{r}
+geno <- read.csv(system.file("extdata", "sample_data.csv", package = "MultifacetedCHOICE"))
+datatable(head(geno)[,1:10],
+          filter = 'top',
+          rownames = TRUE,
+          extensions = 'Buttons',
+          options = list(pageLength = 10,
+                         dom = 'Bfrtip', 
+                         buttons = c('copy', 'csv', 'excel', 'pdf', 'print')))
+```
+
+### Meta Data
+
+This dataframe must include the following columns:
+
+* Sample IDs (must match Sample IDs from the GT-seq output)
+* Sex
+
+Optional column (you can add any you want) examples:
+
+* Date
+* Jack
+* Measurements
+
+```{r}
+meta_data <- read.csv(system.file("extdata", "meta_data.csv", package = "MultifacetedCHOICE"))
+datatable(head(meta_data),
+          filter = 'top',
+          rownames = TRUE,
+          extensions = 'Buttons',
+          options = list(pageLength = 10,
+                         dom = 'Bfrtip', 
+                         buttons = c('copy', 'csv', 'excel', 'pdf', 'print')))
+```
+
+### Allele Information
+
+Dataframe with:
+
+* Allele ID: chrom:position
+* Chromosome
+* Position
+* Site ID: **Must match the column names in the GT-seq output**
+* Advantage: "assortive" or "disassortive"
+
+
+```{r}
+allele_info <- read.csv(system.file("extdata", "allele_info.csv", package = "MultifacetedCHOICE"))
+datatable(head(allele_info),
+          filter = 'top',
+          rownames = TRUE,
+          extensions = 'Buttons',
+          options = list(pageLength = 10,
+                         dom = 'Bfrtip', 
+                         buttons = c('copy', 'csv', 'excel', 'pdf', 'print')))
+```
+
+# Make Database
+
+You will need 3 dataframes with the above criteria:
+
+* GT-seq output
+* Meta Data
+* Allele Information
+
+```{r}
+## Make the database
+DBs <- make_database(gtseq = geno, metadata = meta_data, 
+                     allele_info = allele_info)
+```
+
+
+# Get all possible matches
+
+Input:
+
+* Previously made Data Base
+* Females: Vector of up to 9 female sample IDs
+* Males: Vector of up to 9 male sample IDs
+* Type:
+    * `all_alleles`: each separate allele has `assortive` or `disassortive` classified.
+    * `assortive`: all assortive
+    * `disassortive`: all disassortive
+* Bonus (optional)
+
+
+```{r}
+# set samples
+females <- geno$Sample[1:7]
+print(females)
+males <- geno$Sample[21:27]
+print(males)
+
+# Check Sample IDs
+check_samples(DB = DBs, females = females, 
+              males = males, used = FALSE)
+
+# run samples, rank for each sample
+all_matings <- get_all_rankings(DB = DBs, females = females, males = males,
+                                type = "all_alleles")
+# one comparison
+datatable(all_matings[[1]],
+          filter = 'top',
+          rownames = TRUE,
+          extensions = 'Buttons',
+          options = list(pageLength = 10,
+                         dom = 'Bfrtip', 
+                         buttons = c('copy', 'csv', 'excel', 'pdf', 'print')))
+
+```
+
+# Rank Matches
+
+Input:
+
+* Females: Vector of the female sample IDs
+* Males: Vector of the male sample IDs
+* list from previous step
+
+
+```{r}
+tips <- rank_all_mates(females, males, ranked_list=all_matings)
+datatable(tips,
+          filter = 'top',
+          rownames = TRUE,
+          extensions = 'Buttons',
+          options = list(pageLength = 10,
+                         dom = 'Bfrtip', 
+                         buttons = c('copy', 'csv', 'excel', 'pdf', 'print')))
+
+```
+
